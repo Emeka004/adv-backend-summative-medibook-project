@@ -1,5 +1,6 @@
 const appointmentModel = require('../models/appointmentModel');
 const { calculateRefund } = require('../utils/refund');
+const { appendAuditLog } = require('../utils/auditLogger');
 const {
   isValidId,
   validateAppointmentSlot
@@ -45,6 +46,14 @@ async function book(req, res, next) {
       doctorId,
       appointmentDateTime
     );
+    appendAuditLog({
+      event: 'appointment_booked',
+      appointment_id: appointment.id,
+      patient_id: appointment.patient_id,
+      doctor_id: appointment.doctor_id,
+      appointment_datetime: appointment.appointment_datetime,
+      amount_paid: appointment.amount_paid
+    });
     res.status(201).json(appointment);
   } catch (error) {
     next(error);
@@ -76,6 +85,16 @@ async function cancel(req, res, next) {
     if (!cancelled) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
+    appendAuditLog({
+      event: 'appointment_cancelled',
+      appointment_id: cancelled.id,
+      patient_id: cancelled.patient_id,
+      doctor_id: cancelled.doctor_id,
+      appointment_datetime: cancelled.appointment_datetime,
+      refund_amount: refundAmount,
+      refund_percentage: refund.percentage,
+      notice_hours: Number(refund.noticeHours.toFixed(2))
+    });
     res.json({
       appointment: cancelled,
       refund: {
