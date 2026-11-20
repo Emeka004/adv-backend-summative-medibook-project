@@ -1,6 +1,7 @@
 const appointmentModel = require('../models/appointmentModel');
 const { calculateRefund } = require('../utils/refund');
 const { appendAuditLog } = require('../utils/auditLogger');
+const queues = require('../services/queueService');
 const {
   isValidId,
   validateAppointmentSlot
@@ -54,8 +55,40 @@ async function book(req, res, next) {
       appointment_datetime: appointment.appointment_datetime,
       amount_paid: appointment.amount_paid
     });
+    try {
+      await queues.enqueueConfirmation(appointment);
+    } catch (error) {
+      console.error('Failed to enqueue confirmation job:', error.message);
+    }
     res.status(201).json(appointment);
   } catch (error) {
+    if (error.code === 'DOCTOR_SLOT_TAKEN' ||
+        error.code === 'DOCTOR_DAY_FULL') {
+      const date = String(appointmentDateTime).slice(0, 10);
+      try {
+        if (error.code === 'DOCTOR_DAY_FULL') {
+          await queues.addDayWaitlist(patientId, doctorId, date);
+        } else {
+          await queues.addSlotWaitlist(patientId, doctorId, appointmentDateTime);
+        }
+      } catch (queueError) {
+        console.error('Failed to add patient to waitlist:', queueError.message);
+        return res.status(503).json({
+          error: 'The appointment is unavailable and the waitlist is temporarily unavailable'
+        });
+      }
+      return res.status(202).json({
+        message: 'Appointment slot is unavailable; patient added to the waitlist',
+        waitlist: {
+          patient_id: patientId,
+          doctor_id: doctorId,
+          appointment_datetime: error.code === 'DOCTOR_SLOT_TAKEN'
+            ? appointmentDateTime
+            : null,
+          date: error.code === 'DOCTOR_DAY_FULL' ? date : null
+        }
+      });
+    }
     next(error);
   }
 }
@@ -95,6 +128,20 @@ async function cancel(req, res, next) {
       refund_percentage: refund.percentage,
       notice_hours: Number(refund.noticeHours.toFixed(2))
     });
+    try {
+      await queues.enqueuePromotion({
+        type: 'slot',
+        doctor_id: cancelled.doctor_id,
+        appointment_datetime: cancelled.appointment_datetime
+      });
+      await queues.enqueuePromotion({
+        type: 'day',
+        doctor_id: cancelled.doctor_id,
+        date: String(cancelled.appointment_datetime).slice(0, 10)
+      });
+    } catch (queueError) {
+      console.error('Failed to enqueue waitlist promotion:', queueError.message);
+    }
     res.json({
       appointment: cancelled,
       refund: {

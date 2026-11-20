@@ -155,10 +155,37 @@ async function cancelById(id, refundAmount, refundPercentage) {
   }
 }
 
+async function findAvailableSlot(doctorId, date) {
+  const [rows] = await db.execute(
+    `SELECT slot_time
+     FROM (
+       SELECT '09:00:00' AS slot_time UNION ALL SELECT '09:30:00'
+       UNION ALL SELECT '10:00:00' UNION ALL SELECT '10:30:00'
+       UNION ALL SELECT '11:00:00' UNION ALL SELECT '11:30:00'
+       UNION ALL SELECT '12:00:00' UNION ALL SELECT '12:30:00'
+       UNION ALL SELECT '13:00:00' UNION ALL SELECT '13:30:00'
+       UNION ALL SELECT '14:00:00' UNION ALL SELECT '14:30:00'
+       UNION ALL SELECT '15:00:00' UNION ALL SELECT '15:30:00'
+       UNION ALL SELECT '16:00:00' UNION ALL SELECT '16:30:00'
+     ) slots
+     WHERE NOT EXISTS (
+       SELECT 1
+       FROM appointments
+       WHERE doctor_id = ?
+         AND status = 'booked'
+         AND appointment_datetime = TIMESTAMP(?, slot_time)
+     )
+     LIMIT 1`,
+    [doctorId, date]
+  );
+  return rows[0] ? `${date} ${rows[0].slot_time}` : null;
+}
+
 module.exports = {
   findPatient,
   findDoctor,
   getById,
   createBooking,
-  cancelById
+  cancelById,
+  findAvailableSlot
 };
