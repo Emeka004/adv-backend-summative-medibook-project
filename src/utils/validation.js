@@ -13,7 +13,23 @@ function parseFutureDate(value) {
     return null;
   }
   const date = new Date(value.replace(' ', 'T'));
-  return Number.isNaN(date.getTime()) ? null : date;
+  if (Number.isNaN(date.getTime())) return null;
+
+  const [year, month, day, hour, minute, second] = value
+    .match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})$/)
+    .slice(1)
+    .map(Number);
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() + 1 !== month ||
+    date.getDate() !== day ||
+    date.getHours() !== hour ||
+    date.getMinutes() !== minute ||
+    date.getSeconds() !== second
+  ) {
+    return null;
+  }
+  return date;
 }
 
 function validateAppointmentSlot(value, now = new Date()) {
