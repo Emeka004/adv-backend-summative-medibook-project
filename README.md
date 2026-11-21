@@ -159,9 +159,14 @@ Successful bookings and cancellations call the async `fs.promises` logger. The l
 
 BullMQ queues run in Redis, while separate worker processes consume promotion and notification jobs. Slot and whole-day waitlists are Redis lists. Promotion failures reinsert the removed waitlist entry at the front with `LPUSH`, preserving FIFO priority and preventing loss from both Redis and MySQL. Confirmation jobs are processed into audit-log entries.
 
-**Weight:** 30% of final grade
-**Duration:** 2 weeks
-**Mode:** Individual project
+### Business Rules Enforced by Application Logic
+
+1. **Daily appointment limit:** Each doctor can have a maximum of 12 active appointments per day. This is enforced transactionally in the Express booking logic using MySQL transactions and row-level locking.
+
+2. **Future appointment validation:** The Express application validates that every requested appointment date and time is in the future before inserting the booking into the database.
+
+3. **Appointment time slots:** Database constraints restrict appointments to 30-minute intervals between 09:00 and 16:30, ensuring that appointments finish within the clinic's 09:00–17:00 working hours.
+
 **Stack (mandatory):** Node.js, Express.js, MySQL (with parameterized queries only), Redis
 
 ---
