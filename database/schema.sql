@@ -62,10 +62,10 @@ CREATE TABLE IF NOT EXISTS appointments (
     CHECK (refund_amount IS NULL OR refund_amount >= 0),
   CONSTRAINT chk_appointments_refund_percentage
     CHECK (refund_percentage IS NULL OR refund_percentage IN (0, 50, 100)),
-  CONSTRAINT chk_appointments_slot
-    CHECK (
-      SECOND(appointment_datetime) = 0
-      AND MINUTE(appointment_datetime) IN (0, 30)
-      AND HOUR(appointment_datetime) BETWEEN 9 AND 16
-    )
+    CONSTRAINT chk_appointments_slot CHECK (
+    SECOND(appointment_datetime) = 0
+    AND MINUTE(appointment_datetime) IN (0, 30)
+    AND TIME(appointment_datetime)
+        BETWEEN '09:00:00' AND '16:30:00'
+)
 ) ENGINE = InnoDB;
