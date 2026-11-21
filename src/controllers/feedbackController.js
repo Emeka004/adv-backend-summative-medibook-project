@@ -10,7 +10,7 @@ function escapeHtml(value) {
     .replace(/'/g, '&#39;');
 }
 
-function showFeedback(req, res) {
+async function showFeedback(req, res) {
   const supportedLocales = new Set(['en', 'fr']);
   const locale = supportedLocales.has(String(req.query.lang || '').toLowerCase())
     ? String(req.query.lang).toLowerCase()
@@ -69,7 +69,7 @@ function showFeedback(req, res) {
   );
   let template;
   try {
-    template = fs.readFileSync(templatePath, 'utf8');
+    template = await fs.promises.readFile(templatePath, 'utf8');
   } catch (error) {
     return res.status(500).json({ error: 'Feedback page template not found' });
   }
