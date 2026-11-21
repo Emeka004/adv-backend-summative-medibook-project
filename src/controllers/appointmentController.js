@@ -47,7 +47,7 @@ async function book(req, res, next) {
       doctorId,
       appointmentDateTime
     );
-    appendAuditLog({
+    await appendAuditLog({
       event: 'appointment_booked',
       appointment_id: appointment.id,
       patient_id: appointment.patient_id,
@@ -118,7 +118,7 @@ async function cancel(req, res, next) {
     if (!cancelled) {
       return res.status(404).json({ error: 'Appointment not found' });
     }
-    appendAuditLog({
+    await appendAuditLog({
       event: 'appointment_cancelled',
       appointment_id: cancelled.id,
       patient_id: cancelled.patient_id,

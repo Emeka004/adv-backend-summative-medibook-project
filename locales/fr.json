@@ -1,0 +1,12 @@
+{
+  "title": "Retour sur le cours",
+  "instructions": "Veuillez répondre aux questions suivantes sur le cours.",
+  "submit": "Envoyer le retour",
+  "questions": [
+    "Quel sujet de ce cours avez-vous trouvé le plus difficile, et pourquoi ?",
+    "Décrivez un concept que vous n’avez compris qu’après les travaux pratiques. Qu’est-ce qui a fait la différence ?",
+    "Comment votre approche de la conception des bases de données ou des API a-t-elle changé depuis le début du trimestre ?",
+    "Que amélioreriez-vous dans la façon dont ce cours est enseigné ou évalué ?",
+    "Comment envisagez-vous d’appliquer à l’avenir les connaissances acquises dans ce cours ?"
+  ]
+}

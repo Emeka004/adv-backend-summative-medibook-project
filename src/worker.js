@@ -20,7 +20,7 @@ async function promoteSlot(job) {
         entry.appointment_datetime
       );
       await queues.enqueueConfirmation(appointment);
-      appendAuditLog({
+      await appendAuditLog({
         event: 'waitlist_promoted',
         appointment_id: appointment.id,
         patient_id: appointment.patient_id,
@@ -54,7 +54,7 @@ async function promoteSlot(job) {
         slot
       );
       await queues.enqueueConfirmation(appointment);
-      appendAuditLog({
+      await appendAuditLog({
         event: 'waitlist_promoted',
         appointment_id: appointment.id,
         patient_id: appointment.patient_id,
@@ -77,7 +77,7 @@ const promotionWorker = new Worker(
 const notificationWorker = new Worker(
   'medibook-notifications',
   async (job) => {
-    appendAuditLog({
+    await appendAuditLog({
       event: 'appointment_confirmation',
       job_id: String(job.id),
       ...job.data

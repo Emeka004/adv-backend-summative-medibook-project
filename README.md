@@ -1,5 +1,164 @@
 # Final Assessment — Backend Development
 
+## Project setup
+
+### Requirements
+
+- Node.js 18 or newer
+- MySQL 8.0 or newer
+- Redis 7 or newer
+
+### 1. Install dependencies
+
+```powershell
+npm install
+```
+
+### 2. Configure environment variables
+
+Copy `.env.example` to `.env`, then set your local MySQL credentials and Redis address:
+
+```env
+PORT=3000
+DB_HOST=localhost
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=your_password
+DB_NAME=medibook
+REDIS_HOST=127.0.0.1
+REDIS_PORT=6379
+```
+
+Never commit `.env` or real database passwords.
+
+### 3. Create and seed MySQL
+
+From a MySQL client:
+
+```sql
+SOURCE database/schema.sql;
+SOURCE database/seed.sql;
+```
+
+Alternatively, run both files through your MySQL administrator tool.
+
+### 4. Start Redis
+
+Start Redis locally using your Redis installation or service manager. The API can start while Redis is unavailable, but waitlist and confirmation jobs require Redis.
+
+### 5. Start the application
+
+```powershell
+npm start
+```
+
+The API is available at `http://localhost:3000`.
+
+Start the separate worker process in another terminal:
+
+```powershell
+npm run worker
+```
+
+### 6. Run tests
+
+```powershell
+npm test
+```
+
+The unit tests use only pure functions and do not require MySQL or Redis.
+
+## Endpoint runbook
+
+All patient and doctor JSON requests use `Content-Type: application/json`.
+
+### Patients
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/patients` | Create a patient |
+| GET | `/api/patients` | List all patients |
+| GET | `/api/patients/:id` | Read one patient |
+| PATCH | `/api/patients/:id` | Update one or more fields |
+| DELETE | `/api/patients/:id` | Delete a patient |
+
+Example create body:
+
+```json
+{
+  "name": "Kofi Mensah",
+  "email": "kofi@example.com",
+  "phone": "0244-999-888"
+}
+```
+
+### Doctors
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/doctors` | Create a doctor |
+| GET | `/api/doctors` | List all doctors |
+| GET | `/api/doctors/:id` | Read one doctor |
+| PATCH | `/api/doctors/:id` | Update one or more fields |
+| DELETE | `/api/doctors/:id` | Delete a doctor |
+| GET | `/api/doctors/:id/statistics` | Get doctor statistics |
+| GET | `/api/doctors/reports/summary` | Get every doctor's totals |
+| GET | `/api/doctors/reports/busy-days` | Get busy doctor days |
+
+Report route order is intentional: the two report routes are registered before the `/:id` route.
+
+Example create body:
+
+```json
+{
+  "name": "Dr. Nkrumah",
+  "specialty": "General Practice",
+  "consultation_fee": 175,
+  "room": "R-15"
+}
+```
+
+### Appointments
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| POST | `/api/appointments` | Book an appointment |
+| DELETE | `/api/appointments/:id` | Cancel and refund an appointment |
+
+Example future booking body:
+
+```json
+{
+  "patient_id": 1,
+  "doctor_id": 1,
+  "appointment_datetime": "2026-12-15 09:30:00"
+}
+```
+
+The server rejects past, 17:00, off-boundary, and malformed slots with `422`. Duplicate or 12-per-day conflicts use `409` or `422`.
+
+### Feedback
+
+| Method | Endpoint | Purpose |
+|---|---|---|
+| GET | `/feedback` | English feedback page |
+| GET | `/feedback?lang=fr` | French feedback page |
+| GET | `/feedback?lang=unsupported` | Falls back to English |
+
+## Design justifications
+
+### Booking and cancellation
+
+Booking validation is performed server-side before database work. MySQL named locks serialize bookings for a doctor/day, and the database's active-slot unique key provides a separate concurrency guard. Refund policy is exactly: more than 48 hours receives 100%, exactly 48 through exactly 24 hours receives 50%, and under 24 hours receives 0%. Cancellation and refund fields are updated in one MySQL transaction.
+
+### Audit logging
+
+Successful bookings and cancellations call the async `fs.promises` logger. The logger creates `logs/` when necessary and catches write failures, so logging cannot turn a successful database operation into an API failure. No `*Sync` file API is used in request or worker handlers.
+
+### Redis and promotion
+
+BullMQ queues run in Redis, while separate worker processes consume promotion and notification jobs. Slot and whole-day waitlists are Redis lists. Promotion failures reinsert the removed waitlist entry at the front with `LPUSH`, preserving FIFO priority and preventing loss from both Redis and MySQL. Confirmation jobs are processed into audit-log entries.
+
 **Weight:** 30% of final grade
 **Duration:** 2 weeks
 **Mode:** Individual project
