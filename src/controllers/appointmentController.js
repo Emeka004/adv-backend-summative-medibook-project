@@ -18,13 +18,13 @@ function validateIdOrThrow(id) {
 }
 
 async function book(req, res, next) {
-  try {
-    const {
-      patient_id: patientId,
-      doctor_id: doctorId,
-      appointment_datetime: appointmentDateTime
-    } = req.body || {};
+  const {
+    patient_id: patientId,
+    doctor_id: doctorId,
+    appointment_datetime: appointmentDateTime
+  } = req.body || {};
 
+  try {
     if (!isValidId(patientId) || !isValidId(doctorId)) {
       throw badRequest('patient_id and doctor_id must be positive integers');
     }
