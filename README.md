@@ -169,6 +169,8 @@ BullMQ queues run in Redis, while separate worker processes consume promotion an
 
 **Stack (mandatory):** Node.js, Express.js, MySQL (with parameterized queries only), Redis
 
+DEMO VIDEO: https://youtu.be/qKCFeIDQK4I
+
 ---
 
 ## Scenario — "MediBook" Clinic Appointment System
