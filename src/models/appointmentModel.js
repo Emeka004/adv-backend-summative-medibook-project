@@ -175,8 +175,10 @@ async function findAvailableSlot(doctorId, date) {
          AND status = 'booked'
          AND appointment_datetime = TIMESTAMP(?, slot_time)
      )
+       AND TIMESTAMP(?, slot_time) > NOW()
+     ORDER BY slot_time
      LIMIT 1`,
-    [doctorId, date]
+    [doctorId, date, date]
   );
   return rows[0] ? `${date} ${rows[0].slot_time}` : null;
 }

@@ -161,7 +161,7 @@ BullMQ queues run in Redis, while separate worker processes consume promotion an
 
 ### Business Rules Enforced by Application Logic
 
-1. **Daily appointment limit:** Each doctor can have a maximum of 12 active appointments per day. This is enforced transactionally in the Express booking logic using MySQL transactions and row-level locking.
+1. **Daily appointment limit:** Each doctor can have a maximum of 12 active appointments per day. This is enforced by checking the count and inserting within a MySQL transaction while holding a MySQL named lock for that doctor and date. The lock serializes booking attempts across application connections.
 
 2. **Future appointment validation:** The Express application validates that every requested appointment date and time is in the future before inserting the booking into the database.
 

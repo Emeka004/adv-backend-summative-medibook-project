@@ -1,5 +1,9 @@
 const { calculateRefund } = require('../src/utils/refund');
 const { validateAppointmentSlot } = require('../src/utils/validation');
+const {
+  getDayWaitlistExpiryReason,
+  getSlotWaitlistExpiryReason
+} = require('../src/utils/waitlist');
 
 describe('calculateRefund', () => {
   const cancellation = new Date('2026-08-01T09:00:00');
@@ -54,5 +58,42 @@ describe('validateAppointmentSlot', () => {
   test('rejects impossible calendar dates', () => {
     expect(validateAppointmentSlot('2026-02-30 09:00:00', now))
       .toBe('appointment_datetime must use YYYY-MM-DD HH:MM:SS format');
+  });
+});
+
+describe('waitlist expiry', () => {
+  test('does not promote a slot that has already passed', () => {
+    expect(getSlotWaitlistExpiryReason(
+      '2026-08-01 09:00:00',
+      new Date('2026-08-01T10:00:00')
+    )).toBe('appointment_datetime must be in the future');
+  });
+
+  test('keeps a future slot eligible for promotion', () => {
+    expect(getSlotWaitlistExpiryReason(
+      '2026-08-01 10:30:00',
+      new Date('2026-08-01T10:00:00')
+    )).toBeNull();
+  });
+
+  test('keeps a day waitlist active until working hours end', () => {
+    expect(getDayWaitlistExpiryReason(
+      '2026-08-01',
+      new Date('2026-08-01T16:59:00')
+    )).toBeNull();
+  });
+
+  test('expires a day waitlist once no future working slot remains', () => {
+    expect(getDayWaitlistExpiryReason(
+      '2026-08-01',
+      new Date('2026-08-01T17:00:00')
+    )).toBe('No future appointment slots remain for the waitlisted day');
+  });
+
+  test('rejects invalid day waitlist dates', () => {
+    expect(getDayWaitlistExpiryReason(
+      '2026-02-30',
+      new Date('2026-02-01T09:00:00')
+    )).toBe('date must use a valid calendar date');
   });
 });
