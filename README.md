@@ -135,7 +135,7 @@ Example future booking body:
 }
 ```
 
-The server rejects past, 17:00, off-boundary, and malformed slots with `422`. Duplicate or 12-per-day conflicts use `409` or `422`.
+The server rejects past, 17:00, off-boundary, and malformed slots with `422`. If the requested slot or doctor-day is full and Redis is available, the patient is added to the waitlist and the server responds with `202 Accepted`; if the waitlist is unavailable, the response is `503`.
 
 ### Feedback
 
